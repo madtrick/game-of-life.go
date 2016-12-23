@@ -7,11 +7,14 @@ import (
 	"time"
 )
 
-func hasNeighboursAt(matrix [5][5]bool, i, j, offsetI, offsetJ int) bool {
+const rows = 10
+const cols = 10
+
+func hasNeighboursAt(matrix [cols][rows]bool, i, j, offsetI, offsetJ int) bool {
 	return matrix[i+offsetI][j+offsetJ]
 }
 
-func numberOfNeighbours(matrix [5][5]bool, i, j int) int {
+func numberOfNeighbours(matrix [cols][rows]bool, i, j int) int {
 	var rows int
 	var cols int
 	var count int
@@ -47,14 +50,12 @@ func numberOfNeighbours(matrix [5][5]bool, i, j int) int {
 }
 
 func main() {
-	const rows = 5
-	const cols = 5
 	var matrix [rows][cols]bool
 	var randomizer *rand.Rand
 	var numberOfInitialCells int
 	var population int
 
-	numberOfInitialCells = 4
+	numberOfInitialCells = 10
 	population = numberOfInitialCells
 	randomizer = rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -66,8 +67,8 @@ func main() {
 	var positionY int
 
 	for i := 1; i <= numberOfInitialCells; i++ {
-		positionX = randomizer.Intn(5)
-		positionY = randomizer.Intn(5)
+		positionX = randomizer.Intn(cols)
+		positionY = randomizer.Intn(rows)
 
 		fmt.Printf("Initializing cell in %d, %d\n", positionX, positionY)
 		matrix[positionX][positionY] = true
