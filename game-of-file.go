@@ -10,11 +10,11 @@ import (
 const rows = 10
 const cols = 10
 
-func hasNeighboursAt(matrix [cols][rows]bool, i, j, offsetI, offsetJ int) bool {
+func hasNeighboursAt(matrix [][]bool, i, j, offsetI, offsetJ int) bool {
 	return matrix[i+offsetI][j+offsetJ]
 }
 
-func numberOfNeighbours(matrix [cols][rows]bool, i, j int) int {
+func numberOfNeighbours(matrix [][]bool, i, j int) int {
 	var rows int
 	var cols int
 	var count int
@@ -50,7 +50,7 @@ func numberOfNeighbours(matrix [cols][rows]bool, i, j int) int {
 }
 
 func main() {
-	var matrix [rows][cols]bool
+	var matrix [][]bool
 	var randomizer *rand.Rand
 	var numberOfInitialCells int
 	var population int
@@ -59,12 +59,12 @@ func main() {
 	population = numberOfInitialCells
 	randomizer = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	for index := range matrix {
-		fmt.Printf("Value %d, %v\n", index, matrix[index])
-	}
-
 	var positionX int
 	var positionY int
+
+	for i := 1; i <= cols; i++ {
+		matrix = append(matrix, make([]bool, rows))
+	}
 
 	for i := 1; i <= numberOfInitialCells; i++ {
 		positionX = randomizer.Intn(cols)
