@@ -2,13 +2,11 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"math/rand"
 	"time"
 )
-
-const rows = 10
-const cols = 10
 
 func hasNeighboursAt(matrix [][]bool, i, j, offsetI, offsetJ int) bool {
 	return matrix[i+offsetI][j+offsetJ]
@@ -55,20 +53,29 @@ func main() {
 	var numberOfInitialCells int
 	var population int
 
-	numberOfInitialCells = 10
+	var cols *int
+	var rows *int
+	var sleep *time.Duration
+
+	cols = flag.Int("rows", 10, "Number of rows")
+	rows = flag.Int("cols", 10, "Number of cols")
+	sleep = flag.Duration("sleep", 5*time.Second, "Sleep between rounds (in seconds)")
+	flag.Parse()
+
+	numberOfInitialCells = int(float32(*cols*(*rows)) * 0.2)
 	population = numberOfInitialCells
 	randomizer = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var positionX int
 	var positionY int
 
-	for i := 1; i <= cols; i++ {
-		matrix = append(matrix, make([]bool, rows))
+	for i := 1; i <= *cols; i++ {
+		matrix = append(matrix, make([]bool, *rows))
 	}
 
 	for i := 1; i <= numberOfInitialCells; i++ {
-		positionX = randomizer.Intn(cols)
-		positionY = randomizer.Intn(rows)
+		positionX = randomizer.Intn(*cols)
+		positionY = randomizer.Intn(*rows)
 
 		fmt.Printf("Initializing cell in %d, %d\n", positionX, positionY)
 		matrix[positionX][positionY] = true
@@ -77,10 +84,10 @@ func main() {
 	var neighbours int
 
 	for population > 0 {
-		for j := 0; j < cols; j++ {
+		for j := 0; j < *cols; j++ {
 			var line bytes.Buffer
 
-			for i := 0; i < rows; i++ {
+			for i := 0; i < *rows; i++ {
 				if matrix[i][j] {
 					line.WriteString("*")
 				} else {
@@ -113,6 +120,6 @@ func main() {
 		}
 
 		fmt.Println("")
-		time.Sleep(5 * time.Second)
+		time.Sleep(*sleep * time.Second)
 	}
 }
