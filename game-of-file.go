@@ -47,11 +47,56 @@ func numberOfNeighbours(matrix [][]bool, i, j int) int {
 	return count
 }
 
+func update(matrix [][]bool, cols, rows int, sleep time.Duration, population int) {
+	var neighbours int
+
+	for j := 0; j < cols; j++ {
+		var line bytes.Buffer
+
+		for i := 0; i < rows; i++ {
+			if matrix[i][j] {
+				line.WriteString("*")
+			} else {
+				line.WriteString("_")
+			}
+
+			neighbours = numberOfNeighbours(matrix, i, j)
+
+			if matrix[i][j] {
+				if neighbours == 0 {
+					matrix[i][j] = false
+					population = population - 1
+				}
+
+				if neighbours >= 4 {
+					matrix[i][j] = false
+					population = population - 1
+				}
+			}
+
+			if !matrix[i][j] {
+				if neighbours == 3 {
+					matrix[i][j] = true
+					population = population + 1
+				}
+			}
+		}
+
+		fmt.Println(line.String())
+	}
+
+	fmt.Println("")
+	time.Sleep(sleep)
+
+	if population > 0 {
+		update(matrix, cols, rows, sleep, population)
+	}
+}
+
 func main() {
 	var matrix [][]bool
 	var randomizer *rand.Rand
 	var numberOfInitialCells int
-	var population int
 
 	var cols *int
 	var rows *int
@@ -63,7 +108,6 @@ func main() {
 	flag.Parse()
 
 	numberOfInitialCells = int(float32(*cols*(*rows)) * 0.2)
-	population = numberOfInitialCells
 	randomizer = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var positionX int
@@ -81,45 +125,5 @@ func main() {
 		matrix[positionX][positionY] = true
 	}
 
-	var neighbours int
-
-	for population > 0 {
-		for j := 0; j < *cols; j++ {
-			var line bytes.Buffer
-
-			for i := 0; i < *rows; i++ {
-				if matrix[i][j] {
-					line.WriteString("*")
-				} else {
-					line.WriteString("_")
-				}
-
-				neighbours = numberOfNeighbours(matrix, i, j)
-
-				if matrix[i][j] {
-					if neighbours == 0 {
-						matrix[i][j] = false
-						population = population - 1
-					}
-
-					if neighbours >= 4 {
-						matrix[i][j] = false
-						population = population - 1
-					}
-				}
-
-				if !matrix[i][j] {
-					if neighbours == 3 {
-						matrix[i][j] = true
-						population = population + 1
-					}
-				}
-			}
-
-			fmt.Println(line.String())
-		}
-
-		fmt.Println("")
-		time.Sleep(*sleep * time.Second)
-	}
+	update(matrix, *cols, *rows, *sleep, numberOfInitialCells)
 }
