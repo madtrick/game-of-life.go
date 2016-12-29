@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+type Matrix struct {
+	Data       [][]bool
+	Cols       int
+	Rows       int
+	Population int
+}
+
 func hasNeighboursAt(matrix [][]bool, i, j, offsetI, offsetJ int) bool {
 	return matrix[i+offsetI][j+offsetJ]
 }
@@ -47,38 +54,38 @@ func numberOfNeighbours(matrix [][]bool, i, j int) int {
 	return count
 }
 
-func update(matrix [][]bool, cols, rows int, population int, ticks <-chan bool, done chan<- bool) {
+func update(matrix Matrix, ticks <-chan bool, done chan<- bool) {
 	var neighbours int
 
 	for range ticks {
-		for j := 0; j < cols; j++ {
+		for j := 0; j < matrix.Cols; j++ {
 			var line bytes.Buffer
 
-			for i := 0; i < rows; i++ {
-				if matrix[i][j] {
+			for i := 0; i < matrix.Rows; i++ {
+				if matrix.Data[i][j] {
 					line.WriteString("*")
 				} else {
 					line.WriteString("_")
 				}
 
-				neighbours = numberOfNeighbours(matrix, i, j)
+				neighbours = numberOfNeighbours(matrix.Data, i, j)
 
-				if matrix[i][j] {
+				if matrix.Data[i][j] {
 					if neighbours == 0 {
-						matrix[i][j] = false
-						population = population - 1
+						matrix.Data[i][j] = false
+						matrix.Population = matrix.Population - 1
 					}
 
 					if neighbours >= 4 {
-						matrix[i][j] = false
-						population = population - 1
+						matrix.Data[i][j] = false
+						matrix.Population = matrix.Population - 1
 					}
 				}
 
-				if !matrix[i][j] {
+				if !matrix.Data[i][j] {
 					if neighbours == 3 {
-						matrix[i][j] = true
-						population = population + 1
+						matrix.Data[i][j] = true
+						matrix.Population = matrix.Population + 1
 					}
 				}
 			}
@@ -88,7 +95,7 @@ func update(matrix [][]bool, cols, rows int, population int, ticks <-chan bool, 
 
 		fmt.Println("")
 
-		if population <= 0 {
+		if matrix.Population <= 0 {
 			done <- true
 		}
 	}
@@ -102,9 +109,9 @@ func ticker(sleep time.Duration, ticks chan<- bool) {
 }
 
 func main() {
-	var matrix [][]bool
 	var randomizer *rand.Rand
 	var numberOfInitialCells int
+	var matrix Matrix
 
 	var cols *int
 	var rows *int
@@ -116,13 +123,19 @@ func main() {
 	flag.Parse()
 
 	numberOfInitialCells = int(float32(*cols*(*rows)) * 0.2)
+
+	matrix = Matrix{}
+	matrix.Cols = *cols
+	matrix.Rows = *rows
+	matrix.Population = numberOfInitialCells
+
 	randomizer = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var positionX int
 	var positionY int
 
 	for i := 1; i <= *cols; i++ {
-		matrix = append(matrix, make([]bool, *rows))
+		matrix.Data = append(matrix.Data, make([]bool, *rows))
 	}
 
 	for i := 1; i <= numberOfInitialCells; i++ {
@@ -130,7 +143,7 @@ func main() {
 		positionY = randomizer.Intn(*rows)
 
 		fmt.Printf("Initializing cell in %d, %d\n", positionX, positionY)
-		matrix[positionX][positionY] = true
+		matrix.Data[positionX][positionY] = true
 	}
 
 	var ticks chan bool
@@ -139,7 +152,7 @@ func main() {
 	var done chan bool
 	done = make(chan bool)
 
-	go update(matrix, *cols, *rows, numberOfInitialCells, ticks, done)
+	go update(matrix, ticks, done)
 	go ticker(*sleep, ticks)
 
 	<-done
