@@ -47,50 +47,58 @@ func numberOfNeighbours(matrix [][]bool, i, j int) int {
 	return count
 }
 
-func update(matrix [][]bool, cols, rows int, sleep time.Duration, population int) {
+func update(matrix [][]bool, cols, rows int, population int, ticks <-chan bool, done chan<- bool) {
 	var neighbours int
 
-	for j := 0; j < cols; j++ {
-		var line bytes.Buffer
+	for range ticks {
+		for j := 0; j < cols; j++ {
+			var line bytes.Buffer
 
-		for i := 0; i < rows; i++ {
-			if matrix[i][j] {
-				line.WriteString("*")
-			} else {
-				line.WriteString("_")
-			}
-
-			neighbours = numberOfNeighbours(matrix, i, j)
-
-			if matrix[i][j] {
-				if neighbours == 0 {
-					matrix[i][j] = false
-					population = population - 1
+			for i := 0; i < rows; i++ {
+				if matrix[i][j] {
+					line.WriteString("*")
+				} else {
+					line.WriteString("_")
 				}
 
-				if neighbours >= 4 {
-					matrix[i][j] = false
-					population = population - 1
+				neighbours = numberOfNeighbours(matrix, i, j)
+
+				if matrix[i][j] {
+					if neighbours == 0 {
+						matrix[i][j] = false
+						population = population - 1
+					}
+
+					if neighbours >= 4 {
+						matrix[i][j] = false
+						population = population - 1
+					}
+				}
+
+				if !matrix[i][j] {
+					if neighbours == 3 {
+						matrix[i][j] = true
+						population = population + 1
+					}
 				}
 			}
 
-			if !matrix[i][j] {
-				if neighbours == 3 {
-					matrix[i][j] = true
-					population = population + 1
-				}
-			}
+			fmt.Println(line.String())
 		}
 
-		fmt.Println(line.String())
+		fmt.Println("")
+
+		if population <= 0 {
+			done <- true
+		}
 	}
 
-	fmt.Println("")
+}
+
+func ticker(sleep time.Duration, ticks chan<- bool) {
 	time.Sleep(sleep)
-
-	if population > 0 {
-		update(matrix, cols, rows, sleep, population)
-	}
+	ticks <- true
+	ticker(sleep, ticks)
 }
 
 func main() {
@@ -125,5 +133,16 @@ func main() {
 		matrix[positionX][positionY] = true
 	}
 
-	update(matrix, *cols, *rows, *sleep, numberOfInitialCells)
+	var ticks chan bool
+	ticks = make(chan bool)
+
+	var done chan bool
+	done = make(chan bool)
+
+	go update(matrix, *cols, *rows, numberOfInitialCells, ticks, done)
+	go ticker(*sleep, ticks)
+
+	<-done
+
+	fmt.Println("Done")
 }
