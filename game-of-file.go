@@ -15,46 +15,28 @@ type Matrix struct {
 	Population int
 }
 
-func hasNeighboursAt(matrix [][]bool, i, j, offsetI, offsetJ int) bool {
-	return matrix[i+offsetI][j+offsetJ]
-}
+func (matrix *Matrix) Initialize() {
+	var randomizer *rand.Rand
 
-func numberOfNeighbours(matrix [][]bool, i, j int) int {
-	var rows int
-	var cols int
-	var count int
+	randomizer = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	cols = len(matrix)
-	rows = len(matrix[i])
-	count = 0
+	var positionX int
+	var positionY int
 
-	for row := -1; row <= 1; row++ {
-		for col := -1; col <= 1; col++ {
-			offsetI := col
-			offsetJ := row
-
-			if i+col < 0 || i+col >= cols {
-				continue
-			}
-
-			if j+row < 0 || j+row >= rows {
-				continue
-			}
-
-			if offsetI == 0 && offsetJ == 0 {
-				continue
-			}
-
-			if hasNeighboursAt(matrix, i, j, offsetI, offsetJ) {
-				count = count + 1
-			}
-		}
+	for i := 1; i <= matrix.Cols; i++ {
+		matrix.Data = append(matrix.Data, make([]bool, matrix.Rows))
 	}
 
-	return count
+	for i := 1; i <= matrix.Population; i++ {
+		positionX = randomizer.Intn(matrix.Cols)
+		positionY = randomizer.Intn(matrix.Rows)
+
+		fmt.Printf("Initializing cell in %d, %d\n", positionX, positionY)
+		matrix.Data[positionX][positionY] = true
+	}
 }
 
-func update(matrix Matrix, ticks <-chan bool, done chan<- bool) {
+func (matrix *Matrix) Update(ticks <-chan bool, done chan<- bool) {
 	var neighbours int
 
 	for range ticks {
@@ -99,7 +81,45 @@ func update(matrix Matrix, ticks <-chan bool, done chan<- bool) {
 			done <- true
 		}
 	}
+}
 
+func hasNeighboursAt(matrix [][]bool, i, j, offsetI, offsetJ int) bool {
+	return matrix[i+offsetI][j+offsetJ]
+}
+
+func numberOfNeighbours(matrix [][]bool, i, j int) int {
+	var rows int
+	var cols int
+	var count int
+
+	cols = len(matrix)
+	rows = len(matrix[i])
+	count = 0
+
+	for row := -1; row <= 1; row++ {
+		for col := -1; col <= 1; col++ {
+			offsetI := col
+			offsetJ := row
+
+			if i+col < 0 || i+col >= cols {
+				continue
+			}
+
+			if j+row < 0 || j+row >= rows {
+				continue
+			}
+
+			if offsetI == 0 && offsetJ == 0 {
+				continue
+			}
+
+			if hasNeighboursAt(matrix, i, j, offsetI, offsetJ) {
+				count = count + 1
+			}
+		}
+	}
+
+	return count
 }
 
 func ticker(sleep time.Duration, ticks chan<- bool) {
@@ -109,7 +129,6 @@ func ticker(sleep time.Duration, ticks chan<- bool) {
 }
 
 func main() {
-	var randomizer *rand.Rand
 	var numberOfInitialCells int
 	var matrix Matrix
 
@@ -129,22 +148,7 @@ func main() {
 	matrix.Rows = *rows
 	matrix.Population = numberOfInitialCells
 
-	randomizer = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	var positionX int
-	var positionY int
-
-	for i := 1; i <= *cols; i++ {
-		matrix.Data = append(matrix.Data, make([]bool, *rows))
-	}
-
-	for i := 1; i <= numberOfInitialCells; i++ {
-		positionX = randomizer.Intn(*cols)
-		positionY = randomizer.Intn(*rows)
-
-		fmt.Printf("Initializing cell in %d, %d\n", positionX, positionY)
-		matrix.Data[positionX][positionY] = true
-	}
+	matrix.Initialize()
 
 	var ticks chan bool
 	ticks = make(chan bool)
@@ -152,7 +156,7 @@ func main() {
 	var done chan bool
 	done = make(chan bool)
 
-	go update(matrix, ticks, done)
+	go matrix.Update(ticks, done)
 	go ticker(*sleep, ticks)
 
 	<-done
