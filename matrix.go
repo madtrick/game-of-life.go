@@ -52,11 +52,8 @@ func (matrix *Matrix) Update(ticks <-chan bool, done chan<- bool) {
 
 			for i := 0; i < matrix.Rows; i++ {
 				var cell = matrix.Data[i][j]
-				if cell.IsAlive() {
-					line.WriteString("*")
-				} else {
-					line.WriteString("_")
-				}
+
+				line.WriteString(cell.String())
 
 				neighbours = numberOfNeighbours(matrix.Data, i, j)
 
