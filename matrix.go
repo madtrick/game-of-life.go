@@ -8,7 +8,7 @@ import (
 )
 
 type Matrix struct {
-	Data       [][]bool
+	Data       [][]Cell
 	Cols       int
 	Rows       int
 	Population int
@@ -23,7 +23,13 @@ func (matrix *Matrix) Initialize() {
 	var positionY int
 
 	for i := 1; i <= matrix.Cols; i++ {
-		matrix.Data = append(matrix.Data, make([]bool, matrix.Rows))
+		matrix.Data = append(matrix.Data, make([]Cell, matrix.Rows))
+	}
+
+	for row := 0; row < matrix.Rows; row++ {
+		for col := 0; col < matrix.Cols; col++ {
+			matrix.Data[row][col] = new(NullCell)
+		}
 	}
 
 	for i := 1; i <= matrix.Population; i++ {
@@ -31,7 +37,7 @@ func (matrix *Matrix) Initialize() {
 		positionY = randomizer.Intn(matrix.Rows)
 
 		fmt.Printf("Initializing cell in %d, %d\n", positionX, positionY)
-		matrix.Data[positionX][positionY] = true
+		matrix.Data[positionX][positionY] = new(AliveCell)
 	}
 }
 
@@ -39,11 +45,14 @@ func (matrix *Matrix) Update(ticks <-chan bool, done chan<- bool) {
 	var neighbours int
 
 	for range ticks {
+		matrix.Population = 0
+
 		for j := 0; j < matrix.Cols; j++ {
 			var line bytes.Buffer
 
 			for i := 0; i < matrix.Rows; i++ {
-				if matrix.Data[i][j] {
+				var cell = matrix.Data[i][j]
+				if cell.IsAlive() {
 					line.WriteString("*")
 				} else {
 					line.WriteString("_")
@@ -51,42 +60,29 @@ func (matrix *Matrix) Update(ticks <-chan bool, done chan<- bool) {
 
 				neighbours = numberOfNeighbours(matrix.Data, i, j)
 
-				if matrix.Data[i][j] {
-					if neighbours == 0 {
-						matrix.Data[i][j] = false
-						matrix.Population = matrix.Population - 1
-					}
-
-					if neighbours >= 4 {
-						matrix.Data[i][j] = false
-						matrix.Population = matrix.Population - 1
-					}
-				}
-
-				if !matrix.Data[i][j] {
-					if neighbours == 3 {
-						matrix.Data[i][j] = true
-						matrix.Population = matrix.Population + 1
-					}
+				matrix.Data[i][j] = cell.Evolve(neighbours)
+				if matrix.Data[i][j].IsAlive() {
+					matrix.Population += 1
 				}
 			}
 
 			fmt.Println(line.String())
 		}
 
+		fmt.Println("Population ", matrix.Population)
 		fmt.Println("")
 
-		if matrix.Population <= 0 {
+		if matrix.Population == 0 {
 			done <- true
 		}
 	}
 }
 
-func hasNeighboursAt(matrix [][]bool, i, j, offsetI, offsetJ int) bool {
-	return matrix[i+offsetI][j+offsetJ]
+func hasNeighboursAt(matrix [][]Cell, i, j, offsetI, offsetJ int) bool {
+	return matrix[i+offsetI][j+offsetJ].IsAlive()
 }
 
-func numberOfNeighbours(matrix [][]bool, i, j int) int {
+func numberOfNeighbours(matrix [][]Cell, i, j int) int {
 	var rows int
 	var cols int
 	var count int
